@@ -2,7 +2,7 @@ import { Logger, ValidationError, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { ApplicationModule } from './app.module';
-import { SERVER_PORT } from './configs/constants.config';
+// import { SERVER_PORT } from './configs/constants.config';
 import { ValidationException } from './exceptions/validation.exception';
 
 
@@ -26,7 +26,7 @@ async function bootstrap() {
   // app.use(LoggerMiddleware);
   app.useLogger(new Logger('Nest'));
 
-  await app.listen(SERVER_PORT, '0.0.0.0');
+  await app.listen(3000, '0.0.0.0');
 
   console.log(`Application is running on: ${await app.getUrl()}`);
 }
