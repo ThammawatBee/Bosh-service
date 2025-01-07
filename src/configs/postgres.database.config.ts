@@ -18,6 +18,7 @@ export const postgresDbConfig = (): PostgresConnectionOptions => ({
   migrations: [join(__dirname, "../migrations/postgres/*{.ts,.js}")],
   synchronize: true,
   namingStrategy: new SnakeNamingStrategy(),
+  ssl: true,
 });
 
 if (
