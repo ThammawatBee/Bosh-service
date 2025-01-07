@@ -16,7 +16,7 @@ export const postgresDbConfig = (): PostgresConnectionOptions => ({
   logging: false,
   entities: [join(__dirname, "../entities/*.entity{.ts,.js}")],
   migrations: [join(__dirname, "../migrations/postgres/*{.ts,.js}")],
-  synchronize: true,
+  synchronize: false,
   namingStrategy: new SnakeNamingStrategy(),
   ssl: true,
 });

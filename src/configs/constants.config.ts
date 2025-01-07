@@ -5,7 +5,7 @@ export const CODE_SUCCESS = 1000;
 
 // config
 export const PROM_PREFIX = process.env.PROM_PREFIX;
-export const SERVER_PORT = (process.env.SERVER_PORT as unknown as number) || 3000;
+export const SERVER_PORT = (process.env.PORT as unknown as number) || 3000;
 export const DATABASE_TYPE = 'postgres';
 export const DATABASE_SLAVE = 'slave';
 export const LOGGER_ENABLE = process.env.LOGGER_ENABLE as unknown as boolean | true;
