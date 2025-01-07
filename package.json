@@ -121,5 +121,9 @@
       "clover",
       "cobertura"
     ]
+  },
+  "engines": {
+    "npm":"9.5.1",
+    "node": "19.8.1"
   }
 }
