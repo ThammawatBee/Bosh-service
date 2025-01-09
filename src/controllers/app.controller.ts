@@ -21,11 +21,10 @@ import {
 import { stringify } from "csv-stringify";
 @Controller()
 export class AppController {
-  constructor(private readonly appService: AppService) { }
-  @Get("/hello")
-  getHello() {
-    const message = this.appService.getHello();
-    return { message };
+  constructor(private readonly appService: AppService) {}
+  @Get("/check-status")
+  checkStatus() {
+    return { status: "Service is online" };
   }
 
   @Post("/test")
