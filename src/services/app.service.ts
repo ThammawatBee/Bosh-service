@@ -677,7 +677,7 @@ export class AppService implements OnApplicationBootstrap {
         name: `name-${equipmentNumber}`,
         inspectionPeriod: 6,
         nextInspection: DateTime.fromJSDate(randomDate)
-          .plus({ months: 6 })
+          .plus({ months: 3 })
           .minus({ days: 1 })
           .toJSDate(),
         expiredDate: DateTime.fromJSDate(randomDate)
