@@ -675,7 +675,7 @@ export class AppService implements OnApplicationBootstrap {
         type: EquipmentType.BOSCH,
         brand: `brand-${equipmentNumber}`,
         name: `name-${equipmentNumber}`,
-        inspectionPeriod: 6,
+        inspectionPeriod: 3,
         nextInspection: DateTime.fromJSDate(randomDate)
           .plus({ months: 3 })
           .minus({ days: 1 })
