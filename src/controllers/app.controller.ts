@@ -141,7 +141,11 @@ export class AppController {
 
   @Post("/equipment/generate")
   async generateEquipment(@Body() body: any) {
-    this.appService.generateEquipment(body?.generateCount || 10);
+    this.appService.generateEquipment(
+      body?.generateCount || 10,
+      body?.startDate,
+      body?.endDate
+    );
     return { status: "Generate equipment success" };
   }
 }
