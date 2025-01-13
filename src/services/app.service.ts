@@ -39,7 +39,7 @@ export class AppService implements OnApplicationBootstrap {
     private readonly equipmentRepository: Repository<Equipment>,
     @InjectRepository(EquipmentReport)
     private readonly reportRepository: Repository<EquipmentReport>
-  ) {}
+  ) { }
   getHello(): string {
     return "Hello World!";
   }
@@ -462,9 +462,8 @@ export class AppService implements OnApplicationBootstrap {
             ...updateEquipments,
             {
               id: currentEquipment.id,
-              equipmentNumber: `${resultDate.toFormat("ddMMyy")}-${
-                currentEquipment.equipmentNumber.split("-")[1]
-              }`,
+              equipmentNumber: `${resultDate.toFormat("ddMMyy")}-${currentEquipment.equipmentNumber.split("-")[1]
+                }`,
               nextInspection: resultDate
                 .plus({
                   months: Number(currentEquipment.inspectionPeriod),
@@ -495,11 +494,11 @@ export class AppService implements OnApplicationBootstrap {
               report.result === "NOK"
                 ? currentEquipment.nextInspection
                 : resultDate
-                    .plus({
-                      months: Number(currentEquipment.inspectionPeriod),
-                    })
-                    .minus({ days: 1 })
-                    .toJSDate(),
+                  .plus({
+                    months: Number(currentEquipment.inspectionPeriod),
+                  })
+                  .minus({ days: 1 })
+                  .toJSDate(),
             expiredDate: currentEquipment.expiredDate,
             nokReason: report.result === "NOK" ? report.nokReason : null,
             equipmentId: currentEquipment.id,
@@ -644,7 +643,11 @@ export class AppService implements OnApplicationBootstrap {
     );
   }
 
-  public async generateEquipment(generateCount: number) {
+  public async generateEquipment(
+    generateCount: number,
+    startDate?: string,
+    endDate?: string
+  ) {
     const generateString = () => {
       const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
       const randomLetter =
@@ -655,8 +658,12 @@ export class AppService implements OnApplicationBootstrap {
       return `${randomLetter}${randomDigits}`;
     };
     const generateRandomDate = () => {
-      const start = new Date(2024, 0, 1).getTime(); // Start from January 1, 2024
-      const end = new Date().getTime(); // Up to today
+      let start = new Date(2024, 0, 1).getTime(); // Start from January 1, 2024
+      let end = new Date().getTime(); // Up to today
+      if (startDate && endDate) {
+        start = new Date(startDate).getTime();
+        end = new Date(endDate).getTime();
+      }
       const randomTimestamp = Math.floor(Math.random() * (end - start) + start);
       const randomDate = new Date(randomTimestamp);
       randomDate.setHours(0, 0, 0, 0);
