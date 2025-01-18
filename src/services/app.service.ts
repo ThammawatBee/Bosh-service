@@ -39,7 +39,7 @@ export class AppService implements OnApplicationBootstrap {
     private readonly equipmentRepository: Repository<Equipment>,
     @InjectRepository(EquipmentReport)
     private readonly reportRepository: Repository<EquipmentReport>
-  ) { }
+  ) {}
   getHello(): string {
     return "Hello World!";
   }
@@ -448,9 +448,16 @@ export class AppService implements OnApplicationBootstrap {
     let updateEquipments: Partial<Equipment>[] = [];
     let createReport: Partial<EquipmentReport>[] = [];
     let notFoundEquipment: string[] = [];
-    const equipments = await this.equipmentRepository.findBy({
-      equipmentNumber: In(reports.map((report) => report.equipmentNumber)),
-    });
+    const equipments = await this.equipmentRepository
+      .createQueryBuilder("equipments")
+      .leftJoin("equipments.equipmentReports", "reports")
+      .where("equipments.equipmentNumber IN (:...equipmentNumbers)", {
+        equipmentNumbers: reports.map((report) => report.equipmentNumber),
+      })
+      .andWhere("reports.result != :result", {
+        result: "NOK",
+      })
+      .getMany();
     const equipmentsKeyByEquipmentNumber = keyBy(equipments, "equipmentNumber");
     for (const report of reports) {
       if (equipmentsKeyByEquipmentNumber[report.equipmentNumber]) {
@@ -462,8 +469,9 @@ export class AppService implements OnApplicationBootstrap {
             ...updateEquipments,
             {
               id: currentEquipment.id,
-              equipmentNumber: `${resultDate.toFormat("ddMMyy")}-${currentEquipment.equipmentNumber.split("-")[1]
-                }`,
+              equipmentNumber: `${resultDate.toFormat("ddMMyy")}-${
+                currentEquipment.equipmentNumber.split("-")[1]
+              }`,
               nextInspection: resultDate
                 .plus({
                   months: Number(currentEquipment.inspectionPeriod),
@@ -494,11 +502,11 @@ export class AppService implements OnApplicationBootstrap {
               report.result === "NOK"
                 ? currentEquipment.nextInspection
                 : resultDate
-                  .plus({
-                    months: Number(currentEquipment.inspectionPeriod),
-                  })
-                  .minus({ days: 1 })
-                  .toJSDate(),
+                    .plus({
+                      months: Number(currentEquipment.inspectionPeriod),
+                    })
+                    .minus({ days: 1 })
+                    .toJSDate(),
             expiredDate: currentEquipment.expiredDate,
             nokReason: report.result === "NOK" ? report.nokReason : null,
             equipmentId: currentEquipment.id,
