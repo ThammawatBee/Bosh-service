@@ -39,7 +39,7 @@ export class AppService implements OnApplicationBootstrap {
     private readonly equipmentRepository: Repository<Equipment>,
     @InjectRepository(EquipmentReport)
     private readonly reportRepository: Repository<EquipmentReport>
-  ) {}
+  ) { }
   getHello(): string {
     return "Hello World!";
   }
@@ -454,7 +454,7 @@ export class AppService implements OnApplicationBootstrap {
       .where("equipments.equipmentNumber IN (:...equipmentNumbers)", {
         equipmentNumbers: reports.map((report) => report.equipmentNumber),
       })
-      .andWhere("reports.result != :result", {
+      .andWhere("(reports.id IS NULL OR reports.result != :result)", {
         result: "NOK",
       })
       .getMany();
