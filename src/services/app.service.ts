@@ -28,6 +28,8 @@ import {
 } from "src/entities/report.entity";
 import keyBy from "lodash/keyBy";
 import chunk from "lodash/chunk";
+import mapKeys from "lodash/mapKeys";
+import camelCase from "lodash/camelCase";
 import { Cron } from "@nestjs/schedule";
 
 Settings.defaultZone = "Asia/Bangkok";
@@ -39,7 +41,7 @@ export class AppService implements OnApplicationBootstrap {
     private readonly equipmentRepository: Repository<Equipment>,
     @InjectRepository(EquipmentReport)
     private readonly reportRepository: Repository<EquipmentReport>
-  ) { }
+  ) {}
   getHello(): string {
     return "Hello World!";
   }
@@ -76,6 +78,7 @@ export class AppService implements OnApplicationBootstrap {
       const updatedEquipment = await this.equipmentRepository.save({
         id,
         ...editData,
+        type: equipment.type,
         status: editData.status,
         nextInspection: DateTime.fromFormat(
           editData.nextInspection,
@@ -116,6 +119,7 @@ export class AppService implements OnApplicationBootstrap {
           "dd-MM-yyyy"
         ).toJSDate(),
         status: data.status,
+        area: data.area,
       });
       return equipment;
     } catch (error) {
@@ -153,6 +157,7 @@ export class AppService implements OnApplicationBootstrap {
       inspectionDayEnd,
       expiredDayStart,
       expiredDayEnd,
+      area,
       offset,
       limit,
     } = options;
@@ -201,6 +206,9 @@ export class AppService implements OnApplicationBootstrap {
         }
       );
     }
+    if (area) {
+      query.andWhere(`equipment.area ilike '%${area}%'`);
+    }
     const count = await query.getCount();
     query.orderBy("equipment.createdAt", "DESC");
     query.limit(+limit || 20);
@@ -215,9 +223,16 @@ export class AppService implements OnApplicationBootstrap {
       : new Date(); // Current timestamp
     const fourteenDaysFromNow = currentDate;
     fourteenDaysFromNow.setDate(currentDate.getDate() + 14);
-    const { type, equipmentNumber, name, brand, offset, limit } = options;
+    const { equipmentNumber, name, brand, offset, limit, area } = options;
     const query = this.equipmentRepository
       .createQueryBuilder("equipment")
+      .select(["equipment.*"])
+      .addSelect(
+        `(
+        EXTRACT(EPOCH FROM (equipment.nextInspection - CURRENT_DATE) / 86400)
+      )`,
+        "daysUntilInspection"
+      )
       .andWhere(
         new Brackets((qb) => {
           qb.where("equipment.nextInspection < :currentDate", {
@@ -234,9 +249,9 @@ export class AppService implements OnApplicationBootstrap {
     query.andWhere("equipment.status = :status", {
       status: EquipmentStatus.ENABLE,
     });
-    if (type) {
-      query.andWhere("equipment.type = :type", { type });
-    }
+    query.andWhere("equipment.type = :type", {
+      type: EquipmentType.BOSCH,
+    });
     if (equipmentNumber) {
       query.andWhere(`equipment.equipmentNumber ilike '%${equipmentNumber}%'`);
     }
@@ -246,12 +261,24 @@ export class AppService implements OnApplicationBootstrap {
     if (brand) {
       query.andWhere(`equipment.brand ilike '%${brand}%'`);
     }
+    if (area) {
+      query.andWhere(`equipment.area ilike '%${area}%'`);
+    }
     const count = await query.getCount();
-    query.orderBy("equipment.createdAt", "DESC");
+    query.orderBy(
+      "EXTRACT(EPOCH FROM (equipment.nextInspection - CURRENT_DATE) / 86400)",
+      "ASC"
+    );
+    query.addOrderBy("equipment.createdAt", "DESC");
     query.limit(+limit || 20);
     query.offset(+offset || 0);
-    const equipments = await query.getMany();
-    return { equipments, count };
+    const equipments = await query.getRawMany();
+    return {
+      equipments: equipments.map((equipment) => {
+        return mapKeys(equipment, (_value, key) => camelCase(key));
+      }) as Equipment[],
+      count,
+    };
   }
 
   public async exportEquipment(
@@ -268,6 +295,7 @@ export class AppService implements OnApplicationBootstrap {
         "Inspection Period",
         "Next Inspection",
         "Expired Date",
+        "Area",
         "Status",
       ], // Define CSV columns
     });
@@ -303,6 +331,7 @@ export class AppService implements OnApplicationBootstrap {
           ["Expired Date"]: DateTime.fromISO(
             equipment.expiredDate.toISOString()
           ).toFormat("dd-MM-yyyy"),
+          ["Area"]: equipment.area || "",
           ["Status"]: equipment.status,
         });
       }
@@ -322,6 +351,7 @@ export class AppService implements OnApplicationBootstrap {
       quoted_string: true,
       columns: [
         "Remaining Days",
+        "Area",
         "Type",
         "New Equipment No.",
         "Current Equipment No.",
@@ -337,11 +367,10 @@ export class AppService implements OnApplicationBootstrap {
 
     const batchSize = 5;
     let offset = 0;
-    const calculateDateDifferent = (equipment: Equipment) => {
-      const diff = DateTime.fromISO(equipment.nextInspection.toISOString())
-        .diff(DateTime.fromFormat(options.inspectDate, "dd-MM-yyyy"), "days")
-        .toObject().days!;
-      return diff > 0 ? Math.ceil(diff) : Math.ceil(diff);
+
+    const changeDaysUntilInspectionToNumber = (daysUntilInspection: string) => {
+      const day = +daysUntilInspection;
+      return day > 0 ? Math.ceil(day) : Math.ceil(day);
     };
 
     const getCurrentEquipmentNo = (equipment: Equipment) => {
@@ -361,7 +390,10 @@ export class AppService implements OnApplicationBootstrap {
 
       for (const equipment of equipments) {
         csvStream.write({
-          ["Remaining Days"]: calculateDateDifferent(equipment),
+          ["Remaining Days"]: changeDaysUntilInspectionToNumber(
+            equipment?.daysUntilInspection
+          ),
+          ["Area"]: equipment.area || "",
           ["Type"]: equipment.type,
           ["New Equipment No."]: getCurrentEquipmentNo(equipment),
           ["Current Equipment No."]: equipment.equipmentNumber,
@@ -389,9 +421,10 @@ export class AppService implements OnApplicationBootstrap {
       quoted_string: true,
       columns: [
         "Result",
-        "Type",
         "Result Date",
         "Staff Name",
+        "Area",
+        "Type",
         "Equipment No.",
         "Name",
         "Brand",
@@ -419,6 +452,7 @@ export class AppService implements OnApplicationBootstrap {
         csvStream.write({
           ["Result"]: report.result,
           ["Type"]: report.type,
+          ["Area"]: report.area || "",
           ["Result Date"]: DateTime.fromISO(
             report.resultDate.toISOString()
           ).toFormat("dd-MM-yyyy"),
@@ -498,6 +532,7 @@ export class AppService implements OnApplicationBootstrap {
             name: currentEquipment.name,
             brand: currentEquipment.brand,
             inspectionPeriod: currentEquipment.inspectionPeriod,
+            area: currentEquipment.area,
             nextInspection:
               report.result === "NOK"
                 ? currentEquipment.nextInspection
@@ -542,6 +577,7 @@ export class AppService implements OnApplicationBootstrap {
       resultDateStart,
       offset,
       limit,
+      area,
     } = options;
     const query = this.reportRepository.createQueryBuilder("report");
     if (type) {
@@ -574,8 +610,11 @@ export class AppService implements OnApplicationBootstrap {
         }
       );
     }
+    if (area) {
+      query.andWhere(`report.area ilike '%${area}%'`);
+    }
     const count = await query.getCount();
-    query.orderBy("report.createdAt", "DESC");
+    query.orderBy("report.resultDate", "DESC");
     query.limit(+limit || 20);
     query.offset(+offset || 0);
     const reports = await query.getMany();

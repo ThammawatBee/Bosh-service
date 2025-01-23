@@ -18,6 +18,7 @@ const CreateEquipmentSchema = z
     name: z.string(),
     brand: z.string(),
     inspectionPeriod: z.number().int(),
+    area: z.string(),
     nextInspection: z.string().refine(
       (nextInspection) => {
         return DateTime.fromFormat(nextInspection, "dd-MM-yyyy").isValid;
@@ -36,11 +37,11 @@ const CreateEquipmentSchema = z
   .refine(
     (equipment) => {
       return (
-        DateTime.fromFormat(equipment.nextInspection, "dd-MM-yyyy") <
-        DateTime.fromFormat(equipment.expiredDate, "dd-MM-yyyy")
+        DateTime.fromFormat(equipment.expiredDate, "dd-MM-yyyy") >=
+        DateTime.fromFormat(equipment.nextInspection, "dd-MM-yyyy")
       );
     },
-    { message: "ExpiredDate must after nextInspection" }
+    { message: "ExpiredDate must after or Equal nextInspection" }
   );
 
 export class CreateEquipment extends createZodDto(CreateEquipmentSchema) { }
@@ -49,6 +50,7 @@ const EditEquipmentSchema = z
   .object({
     name: z.string(),
     brand: z.string(),
+    area: z.string(),
     equipmentNumber: z.string(),
     nextInspection: z.string().refine(
       (nextInspection) => {
@@ -70,11 +72,11 @@ const EditEquipmentSchema = z
   .refine(
     (equipment) => {
       return (
-        DateTime.fromFormat(equipment.nextInspection, "dd-MM-yyyy") <
-        DateTime.fromFormat(equipment.expiredDate, "dd-MM-yyyy")
+        DateTime.fromFormat(equipment.expiredDate, "dd-MM-yyyy") >=
+        DateTime.fromFormat(equipment.nextInspection, "dd-MM-yyyy")
       );
     },
-    { message: "ExpiredDate must after nextInspection" }
+    { message: "ExpiredDate must after or Equal nextInspection" }
   );
 
 export class EditEquipment extends createZodDto(EditEquipmentSchema) { }
@@ -94,7 +96,7 @@ const CreateReportSchema = z.object({
 
 export class CreateReport extends createZodDto(
   z.object({ reports: z.array(CreateReportSchema) })
-) {}
+) { }
 
 const ListEquipmentSchema = z.object({
   type: z.enum(["BOSCH", "EXTERNAL"]).optional(),
@@ -106,6 +108,7 @@ const ListEquipmentSchema = z.object({
   inspectionDayEnd: z.string().optional(),
   expiredDayStart: z.string().optional(),
   expiredDayEnd: z.string().optional(),
+  area: z.string().optional(),
   offset: z.string().optional(),
   limit: z.string().optional(),
 });
@@ -121,6 +124,7 @@ const ListInspectionEquipmentSchema = z.object({
   offset: z.string().optional(),
   limit: z.string().optional(),
   inspectDate: z.string().optional(),
+  area: z.string().optional(),
 });
 
 export class ListInspectionEquipment extends createZodDto(
@@ -137,6 +141,7 @@ const ListReportSchema = z.object({
   limit: z.string().optional(),
   resultDateStart: z.string().optional(),
   resultDateEnd: z.string().optional(),
+  area: z.string().optional(),
 });
 
 export class ListReport extends createZodDto(ListReportSchema) { }
