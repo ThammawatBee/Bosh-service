@@ -66,7 +66,7 @@ export class AppController {
   }
 
   @Post("/equipment")
-  async createEquipment(@Body() body: any) {
+  async createEquipment(@Body() body: CreateEquipment) {
     const equipment = await this.appService.createEquipment(body);
     return { equipment };
   }

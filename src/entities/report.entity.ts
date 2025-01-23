@@ -75,6 +75,9 @@ export class EquipmentReport {
   @Column({ type: "text", nullable: true })
   investigatedBy: string;
 
+  @Column({ type: "text", nullable: true })
+  area: string;
+
   @ManyToOne(() => Equipment, (equipment) => equipment.equipmentReports)
   @JoinColumn({ name: "equipment_id" })
   equipment: Equipment;

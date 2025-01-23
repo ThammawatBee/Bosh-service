@@ -61,6 +61,9 @@ export class Equipment {
   })
   status!: EquipmentStatus;
 
+  @Column({ type: "text", nullable: true })
+  area: string;
+
   @OneToMany(() => EquipmentReport, (report) => report.equipment)
   equipmentReports: EquipmentReport[];
 
@@ -69,4 +72,6 @@ export class Equipment {
 
   @UpdateDateColumn({ name: "updated_at", type: "timestamp" })
   updatedAt: Date;
+
+  daysUntilInspection: string;
 }
